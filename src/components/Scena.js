@@ -1,9 +1,17 @@
-import React, {useRef, useEffect, useState} from 'react'
+import React, {useRef, Suspense,  useEffect, useState} from 'react'
 import {Canvas, useFrame, useThree } from 'react-three-fiber'
 import * as THREE from "three";
-import { ZeroCurvatureEnding } from 'three';
+import useSound from 'use-sound';
+import Grid from './Grid';
+import Box from './Box';
+import thud from '../sounds/thud.wav';
+import steps from '../sounds/steps.wav';
+
 
 const Scena = () => {
+
+ 
+
     var [dir, setDir] = useState(new THREE.Vector3(x, y, z));
     var [direction, setDirection] = useState(null);
    // var dir = new THREE.Vector3(1, 2, 3);
@@ -12,27 +20,51 @@ const Scena = () => {
     var [y, setY] = useState(0);
     var [z, setZ] = useState(0);
 
-    var [position, setPosition] = useState([0, 0, 5]);
+    const [playThud] = useSound(thud); 
+    const [playSteps, {stop}] = useSound(steps);
+
+    var [position, setPosition] = useState([0, 0, 12]);
 
     var [distance, setDistance] = useState(5);
 
     var [speed, setSpeed] = useState(0);
 
     var [aspect, setAspect] = useState(0);
+    var [meshPosition, setMeshPosition] = useState({x: 0, y:0, z:5});
 
-    const rad = 0.09;
+    var [move, setMove] = useState('ArrowUp');
+    var [moveChanged, setMoveChanged] = useState(false);
+
+    var [played, setPlayed] = useState(false);
+ 
+    var [rad, setRad] = useState(-0.08);
 
     const style = {
         width: '100%',
-        height: '900px'
+        height: '900px',
+        background: 'black'
     }
 
     const keyup = (event) => {
      
-        let key = event.key;
+        if (played) {
+            setTimeout(stop, 600);
+            setPlayed(false);
+        }
+        
 
+        let key = event.key;
+        console.log("key: " + key);
+        console.log("move: " + move);
+        if (key!== move) {
+            setMoveChanged(true);
+        } else {
+            setMoveChanged(false);
+        }
+        
         if (key === 'ArrowUp') {
             setSpeed(0);
+            
            } else if (key === 'ArrowRight') {
  
            } else if (key === 'ArrowLeft') {
@@ -41,14 +73,85 @@ const Scena = () => {
             setSpeed(0);
            }
 
+           setMove(key);    
+    }
 
+
+    function Light({ brightness, color }) {
+        return (
+          <rectAreaLight
+            width={3}
+            height={3}
+            intensity={brightness}
+            color={color}
+            position={[5, 1, 4]}
+            lookAt={[0, 0, 0]}
+            penumbra={2}
+            castShadow
+          />
+        );
+      }
+
+
+const Blaster = () => {
+    return (
+        <mesh>
+            <cylinderBufferGeometry />
+            <meshNormalMaterial attach="material" />
+        </mesh>
+    )
+}
+
+    const intersectArray = (arr, pos) => {
+        let status = false;
+
+
+
+        for (var i = 0; i<arr; i++) {
+
+            console.log('position' + i);
+
+            if (intersect(arr[i], pos)) {
+                status = true;
+                break;
+            }
+        }
+
+    }
+
+    const intersect = (pos1, pos2) =>{
+
+        console.log("POSITION 1: " + pos1.x + " " + pos1.y + " " + pos1.z);
+        console.log("POSITION 2: " + pos2.x + " " + pos2.y + " " + pos2.z);
+        var diff = Math.abs(pos1.x - pos2.x) + Math.abs(pos1.y - pos2.y) + Math.abs(pos1.z - pos2.z);
+        
  
+        if (diff < 1 && !moveChanged) {
+            if(speed !== 0) {
+                playThud();
+            console.log("OUCH!");
+            console.log(moveChanged);    
+        }
+            return true;
+        } else {
+
+            if(speed !== 0) {
+
+            console.log(moveChanged);
+            console.log("DIFF: " + diff);
+            }
+            return false;
+        }
+
     }
     
     const keydown = (event) => {
 
 
-  
+  if (!played) {
+      playSteps();
+      setPlayed(true);
+  }
    
  
         
@@ -63,7 +166,7 @@ const Scena = () => {
         } else if (key === 'ArrowDown') {
             setSpeed(-0.1);
         }
-        console.log(position);
+    //    console.log(position);
      
     }
     const ref = useRef(null);
@@ -72,17 +175,22 @@ const Scena = () => {
     }, [keydown])
 
 
-    function Box() {
-        return (
-          <mesh>
-            <boxBufferGeometry />
-            <meshNormalMaterial />
-          </mesh>
-        )
-      }
+const Blocks = () => {
+var blocks = [];
 
+ for (let i = 0; i < 10; i++) {
+     blocks.push
+     (<mesh position={i * 5, 0, i*5}>
+        <boxBufferGeometry />
+        <meshNormalMaterial />
+      </mesh>)
+ } 
 
+ return (<>
+ {blocks}
+ </>)
 
+}
 
     const Camera = (props) => {
       const ref = useRef()
@@ -90,12 +198,12 @@ const Scena = () => {
      
      useEffect(() => void setDefaultCamera(ref.current), [])
 
-  //   useEffect(() => {setPosition(ref.current.position)}, [speed])
+
   
      
       useFrame(() => {
-       
-        if (ref.current)  {
+ 
+        if (ref.current && !intersectArray(positions, meshPosition))  {
  
 
             ref.current.rotation.y = aspect;
@@ -104,9 +212,16 @@ const Scena = () => {
             setPosition(ref.current.position);
             
 
-//            setDir(dir);
+
  
  
+        } else {
+            if (played && intersect(position, meshPosition)) {
+                stop();
+                setPlayed(false);
+                setRad(-rad);
+            }
+            
         }
         
     }
@@ -114,13 +229,36 @@ const Scena = () => {
           )
       return <perspectiveCamera ref={ref} {...props} />
     }
-    
+   const positions = []; 
+   const bx = [];
+   for (var i = 0; i< 7; i++) {
+       for (var j = 0; j<7; j++) {
+           bx.push(<Box position={{x: -5 + (i*2), y:0, z: -5 + (j*2)}} />);
+           positions.push({x: -5 + (i*2), y:0, z: -5 + (j*2)});
+       }
+       
+   }
+
+
 
     return (
         <>
             <Canvas style={style} tabIndex="0" onKeyDown={keydown} onKeyUp={keyup}>
                 <Camera position={position} />
-                <Box />
+                <Light brightness={11.6} color={"#bdefff"}  />
+                {/* <Blaster position={[115,0,10]} /> */}
+                <Suspense fallback={<>Loading...</>}>  
+                    {/* <Box position={meshPosition} /> */}
+                    {/* <Box position={{x: 5, y:0, z:5}} /> */}
+                    {
+                        bx
+                    }
+               </Suspense>
+
+                <Suspense fallback={<>Loading...</>}>
+                
+                <Grid />
+              </Suspense>
             </Canvas>
         </>
     )
