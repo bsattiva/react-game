@@ -11,9 +11,11 @@ import steps from '../sounds/steps.wav';
 
 const Scena = () => {
 
+
     var rX = parseInt(Math.floor(Math.random() * Math.floor(7)));
     var [randX, setRandX] = useState(parseInt(Math.floor(Math.random() * Math.floor(7))));
     var [randZ, setRandZ] = useState(parseInt(Math.floor(Math.random() * Math.floor(7))));
+
     var [dir, setDir] = useState(new THREE.Vector3(x, y, z));
     var [direction, setDirection] = useState(null);
    // var dir = new THREE.Vector3(1, 2, 3);
@@ -229,6 +231,7 @@ const Blaster = () => {
 
 
 
+//setMeshPosition(positions[Math.floor() * Math.floor(49)]);
 
 //setMeshPosition(positions[Math.floor() * Math.floor(49)]);
 
