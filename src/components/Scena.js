@@ -5,14 +5,17 @@ import useSound from 'use-sound';
 import Grid from './Grid';
 import Box from './Box';
 import Moon from './Moon';
+import FireBall from './Boll';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import thud from '../sounds/thud.wav';
 import steps from '../sounds/steps.wav';
 
 
 const Scena = () => {
 
-
+    
     var rX = parseInt(Math.floor(Math.random() * Math.floor(7)));
+    var [shoot, setShoot] = useState(false);
     var [randX, setRandX] = useState(parseInt(Math.floor(Math.random() * Math.floor(7))));
     var [randZ, setRandZ] = useState(parseInt(Math.floor(Math.random() * Math.floor(7))));
 
@@ -28,6 +31,7 @@ const Scena = () => {
     const [playSteps, {stop}] = useSound(steps);
 
     var [position, setPosition] = useState([0, 0, 12]);
+    var [ballPosition, setBallPosition] = useState({x:0, y:0, z:11.8});
     var [meshIndex, setMeshIndex] = useState(19);
     var [distance, setDistance] = useState(5);
 
@@ -43,9 +47,11 @@ const Scena = () => {
 
     var [rad, setRad] = useState(-0.08);
 
+    var [fireballs, setFireballs] = useState([<FireBall position={ballPosition} />]);
+
     const style = {
         width: '100%',
-        height: '900px',
+        height: '100vh',
         background: 'black'
     }
 
@@ -81,6 +87,8 @@ const Scena = () => {
     }
 
 
+
+
     function Light({ brightness, color }) {
         return (
           <rectAreaLight
@@ -97,14 +105,8 @@ const Scena = () => {
       }
 
 
-const Blaster = () => {
-    return (
-        <mesh>
-            <cylinderBufferGeometry />
-            <meshNormalMaterial attach="material" />
-        </mesh>
-    )
-}
+
+      
 
     const intersectArray = (arr, pos) => {
         let status = false;
@@ -148,17 +150,23 @@ const Blaster = () => {
         }
 
     }
+
+    
     
     const keydown = (event) => {
 
     let key = event.key;
+    
     let keys = ['ArrowUp','ArrowRight','ArrowLeft','ArrowDown'];
-    console.log("MESHPOSITION: " + meshPosition.x + " " + meshPosition.z + " " + randX);
+
   if (!played && keys.includes(key)) {
       playSteps();
       setPlayed(true);
   }
    
+  if (key === 't') {
+   setVisible(true);
+  }
  
         
         
@@ -180,6 +188,13 @@ const Blaster = () => {
       
     }, [keydown])
 
+    const [visible, setVisible] = useState(false);
+
+    const Shoot = () => {
+        setVisible(true);
+    }
+      
+      
 
 
     const Camera = (props) => {
@@ -193,6 +208,10 @@ const Blaster = () => {
      
       useFrame(() => {
  
+        if (ref.current && shoot) {
+
+        }
+
         if (ref.current && !intersect(position, meshPosition))  {
  
 
@@ -200,6 +219,7 @@ const Blaster = () => {
             ref.current.getWorldDirection(dir);
             ref.current.position.addScaledVector(dir, speed);
             setPosition(ref.current.position);
+            
 
  
         } else {
@@ -229,11 +249,7 @@ const Blaster = () => {
     
     })();
 
-
-
-//setMeshPosition(positions[Math.floor() * Math.floor(49)]);
-
-//setMeshPosition(positions[Math.floor() * Math.floor(49)]);
+ 
 
     return (
         <>
@@ -252,9 +268,12 @@ const Blaster = () => {
                     <Moon position={{x:7, y:35, z:-113}} />
                 </Suspense>
                 <Suspense fallback={<>Loading...</>}>
-                
+         
                 <Grid />
               </Suspense>
+ 
+                <FireBall position={ballPosition} pos={position} dir={dir} visible={visible}/> 
+                {/* <Shoot position={ballPosition} dir={dir}/> */}
             </Canvas>
         </>
     )
